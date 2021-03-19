@@ -1,6 +1,5 @@
 {
-  "name" : "twapi",
-  "version": "0.1.0",
+  "version": "0.9.1",
   "license": "MIT",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -32,16 +31,16 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  "name": "taskwarlib2",
+  "name": "taskwarlib",
   "author": "Charles Eubanks",
-  "module": "dist/taskwarlib2.esm.js",
+  "module": "dist/taskwarlib.esm.js",
   "size-limit": [
     {
-      "path": "dist/taskwarlib2.cjs.production.min.js",
+      "path": "dist/taskwarlib.cjs.production.min.js",
       "limit": "10 KB"
     },
     {
-      "path": "dist/taskwarlib2.esm.js",
+      "path": "dist/taskwarlib.esm.js",
       "limit": "10 KB"
     }
   ],
