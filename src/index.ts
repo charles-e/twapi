@@ -179,9 +179,9 @@ function fromMatch(match: MatchType[]): Task {
     tags.length === 0 ? rawItem.trim() : rawItem.split('#')[0].trim();
   const marks = findMarks(rawItem);
   const uuid = marks.get('id');
-  const indexed = match as unknown;
-  const idx = (<Indexed>indexed).index;
-  const len = (<Indexed>indexed).length;
+  //const indexed = match as unknown;
+  const idx = (<Indexed>match[2]).index;
+  const len = (<Indexed>match[2]).length;
   const ret: Task = {
     status: status,
     description: desc,
