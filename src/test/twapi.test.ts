@@ -1,4 +1,4 @@
-import { toMD, findAll, Task, rem as twtRem, add as twtAdd, getTask as twtGet }  from '../src';
+import { toMD, findAll, Task, rem as twtRem, add as twtAdd, getTask as twtGet }  from '..'
 
 import moment from 'moment';
 
