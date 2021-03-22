@@ -68,7 +68,7 @@ export function getTask(id: string) {
   return JSON.parse(output);
 }
 
-const todoWithTask: RegExp = /^\s*[-,\\*] \[([ ,x,\\*])\]\s+(\S.*)$/gm;
+const todoWithTask: RegExp = /(^\s*[-,\\*] \[)([ ,x,\\*])(\]\s+)(\S.*)$/gm;
 const tagMarker: RegExp = /#(\S+)/gm;
 const markMarker: RegExp = /\((ok|id):([1-9][0-9,\\.]*|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\)/gm;
 
@@ -91,8 +91,7 @@ function findTags(input: string) {
 
   for (let i = 0; i < matches.length; i++) {
     const match = matches[i];
-    const tag = match[1].substr(1);
-    ret.push(tag);
+    ret.push(match[1]);
   }
   return ret;
 }
@@ -173,19 +172,20 @@ function fromMatch(match: MatchType[]): Task {
       : <string>match[1] === '*'
       ? 'deleted'
       : 'pending';
-  const rawItem: string = match[2] as string;
+  const rawItem: string = match[4] as string;
   const tags = findTags(rawItem);
   const desc =
     tags.length === 0 ? rawItem.trim() : rawItem.split('#')[0].trim();
   const marks = findMarks(rawItem);
   const uuid = marks.get('id');
   //const indexed = match as unknown;
-  const idx = (<Indexed>match[2]).index;
-  const len = (<Indexed>match[2]).length;
+  const matchIdx = (<Indexed>(match as any)).index;
+  const lenTot = (<Indexed>match[0]).length;
+
   const ret: Task = {
     status: status,
     description: desc,
-    loclen: `${idx}:${len}`,
+    loclen: `${matchIdx}:${lenTot}`,
     tags: tags,
   };
   if (uuid) {
