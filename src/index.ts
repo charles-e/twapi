@@ -19,19 +19,19 @@ export interface Task {
   loclen?: string;
   tags?: string[];
 }
-let taskPath : string = '/usr/local/bin/task';
+let taskPath: string = '/usr/local/bin/task';
 
-export function setTaskPath(path : string){
+export function setTaskPath(path: string) {
   taskPath = which.sync(path);
 }
-export function getTaskPath(){
+export function getTaskPath() {
   return taskPath;
 }
 
 export function add(task: Task, relPath: string) {
   let tags: string[] = [];
   if (task.tags) {
-    tags = task.tags.map((t) => '+' + t);
+    tags = task.tags.map(t => '+' + t);
   }
   let cmdArray = ['add'];
   const taskDesc = task.description || '';
@@ -70,17 +70,20 @@ export function getTask(id: string) {
 
 const todoWithTask: RegExp = /(^\s*[-,\\*] \[)([ ,x,\\*])(\]\s+)(\S.*)$/gm;
 const tagMarker: RegExp = /#(\S+)/gm;
-const markMarker: RegExp = /\((ok|id):([1-9][0-9,\\.]*|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\)/gm;
+const markMarker: RegExp = /{(ok|id):([1-9][0-9,\\.]*|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})}/gm;
 
 export function findMarks(input: string) {
   const map: Map<string, string> = new Map();
   let match = markMarker.exec(input);
+  let modified: string = input;
   while (match) {
+    modified = spliceSlice(modified, match.index, match[0].length, '');
     const type = match[1];
     const val = match[2];
     map.set(type, val);
     match = markMarker.exec(input);
   }
+  map.set('str', modified.trim());
   return map;
 }
 
@@ -96,7 +99,12 @@ function findTags(input: string) {
   return ret;
 }
 
-function spliceSlice(str: string, index: number, count: number, add: string) {
+function spliceSlice(
+  str: string,
+  index: number,
+  count: number,
+  add: string
+): string {
   // We cannot pass negative indexes directly to the 2nd slicing operation.
   if (index < 0) {
     index = str.length + index;
@@ -172,11 +180,11 @@ function fromMatch(match: MatchType[]): Task {
       : <string>match[1] === '*'
       ? 'deleted'
       : 'pending';
-  const rawItem: string = match[4] as string;
+  let rawItem: string = match[4] as string;
   const tags = findTags(rawItem);
-  const desc =
-    tags.length === 0 ? rawItem.trim() : rawItem.split('#')[0].trim();
-  const marks = findMarks(rawItem);
+  let desc = tags.length === 0 ? rawItem.trim() : rawItem.split('#')[0].trim();
+  const marks = findMarks(desc);
+  desc = marks.get('str') || desc;
   const uuid = marks.get('id');
   //const indexed = match as unknown;
   const matchIdx = (<Indexed>(match as any)).index;
@@ -320,9 +328,7 @@ export function done(id: string) {
 
 function getPath(old: Task) {
   if (old.annotations && old.annotations.length > 0) {
-    const hit = old.annotations.filter((f) =>
-      f.description.startsWith('file=')
-    );
+    const hit = old.annotations.filter(f => f.description.startsWith('file='));
     if (hit.length > 0) {
       return hit[0].description.substr(5);
     }
@@ -336,7 +342,7 @@ function setPath(old: Task, relpath: string) {
   }
   if (!relpath) {
     old.annotations = old.annotations.filter(
-      (n) => !n.description.startsWith('file=')
+      n => !n.description.startsWith('file=')
     );
     return;
   }
@@ -391,7 +397,7 @@ function toMmt (val)  {
 export function upsert(task: Task, relPath: string, twApi: any) {
   const doImport = twApi != undefined ? twApi.import : importTasks;
   const getLast = twApi != undefined ? twApi.last : last;
-
+  const getById = twApi != undefined ? twApi.getTask : getTask;
   const jsonIn = [
     {
       description: task.description,
@@ -404,7 +410,7 @@ export function upsert(task: Task, relPath: string, twApi: any) {
   if (relPath) {
     setPath(jsonIn[0], relPath);
   }
-  const old = task.uuid && twApi.get(task.uuid);
+  const old = task.uuid && getById(task.uuid);
   if (old && old[0]) {
     const taskTouch = moment(task.modified, 'YYYYMMDD[T]HHmmss[Z]');
     const oldTouch = moment(old[0].modified, 'YYYYMMDD[T]HHmmss[Z]');
@@ -420,28 +426,29 @@ export function upsert(task: Task, relPath: string, twApi: any) {
     old[0].status = jsonIn[0].status;
     old[0].description = jsonIn[0].description;
     old[0].uniq = task.uniq || 0;
+    old[0].loclen = jsonIn[0].loclen;
     doImport(old);
     console.log('updating');
+    return getById(task.uuid);
   } else {
     console.log('adding new');
     doImport(jsonIn);
+    // return the id
+    //
+    const ret = getLast(twApi);
+    if (task.loclen) {
+      ret.loclen = task.loclen;
+    }
+    return ret;
   }
-  // return the id
-  //
-  const ret = getLast(twApi);
-  if (task.loclen) {
-    ret.loclen = task.loclen;
-  }
-  return ret;
 }
 
 export function entry(id: string, date: unknown) {
   let value = 'entry:';
   if (date instanceof Date) {
     const myDate: Date = date;
-    value = `${value}${myDate.getFullYear()}-${
-      myDate.getMonth() + 1
-    }-${myDate.getDate()}`;
+    value = `${value}${myDate.getFullYear()}-${myDate.getMonth() +
+      1}-${myDate.getDate()}`;
   }
   if (date instanceof moment) {
     const myMom: Moment = date as Moment;
@@ -453,3 +460,4 @@ export function entry(id: string, date: unknown) {
   console.log(output);
   return output;
 }
+
