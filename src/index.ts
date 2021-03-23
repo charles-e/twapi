@@ -1,4 +1,4 @@
-import moment, { Moment } from 'moment';
+import moment, {  Moment } from 'moment';
 import { execFileSync } from 'child_process';
 import which from 'which';
 
@@ -175,7 +175,7 @@ type MatchType = string | Indexed;
 
 function fromMatch(match: MatchType[]): Task {
   const status: string =
-    <string>match[1] === 'x'
+    <string>match[2] === 'x'
       ? 'completed'
       : <string>match[1] === '*'
       ? 'deleted'
@@ -277,33 +277,6 @@ export function last(api: any): Task[] {
   throw 'no result';
 }
 
-/* get all the tasks that obsidian will care about
-
-export function obsidian(){
-    const taskparm = ['-DELETED', 'export'];
-    const output = execFileSync( taskPath, taskparm ).toString('utf-8');
-  const all = JSON.parse(output);
-  const mapper = t => {
-    const notes = t.annotations;
-    if (notes){
-    notes.map(n as TaskAnnotation => {
-      if (n.description.startsWith("file=")){
-        t.page = decodeURIComponent( n.description.substring(5));
-      }
-    });
-    }
-    return t;
-  }
-  return all.map(mapper).filter(t => t.page);
-}
-*/
-/*
-export function active(){
-    const taskparm = ['-DELETED', 'export'];
-    const output = execFileSync( taskPath, taskparm ).toString('utf-8');
-  return JSON.parse(output);
-}
-*/
 export function rem(id: string) {
   const taskparm = ['delete'].concat([id]);
   const output = execFileSync(taskPath, taskparm, {
@@ -380,20 +353,6 @@ export function upsertAll(tasks: Task[], relPath: string, twApi: any) {
   }
   return ret;
 }
-/*
-function toMmt (val)  {
-  if (val instanceof moment){
-    return val;
-  }
-  if (val instanceof Date) {
-    return moment(val);
-  }
-  if (val instanceof Number){
-    return moment(val);
-  }
-
-}
-*/
 export function upsert(task: Task, relPath: string, twApi: any) {
   const doImport = twApi != undefined ? twApi.import : importTasks;
   const getLast = twApi != undefined ? twApi.last : last;
@@ -429,7 +388,7 @@ export function upsert(task: Task, relPath: string, twApi: any) {
     old[0].loclen = jsonIn[0].loclen;
     doImport(old);
     console.log('updating');
-    return getById(task.uuid);
+    return getById(task.uuid)[0];
   } else {
     console.log('adding new');
     doImport(jsonIn);
@@ -461,3 +420,44 @@ export function entry(id: string, date: unknown) {
   return output;
 }
 
+/* get all the tasks that obsidian will care about
+
+export function obsidian(){
+    const taskparm = ['-DELETED', 'export'];
+    const output = execFileSync( taskPath, taskparm ).toString('utf-8');
+  const all = JSON.parse(output);
+  const mapper = t => {
+    const notes = t.annotations;
+    if (notes){
+    notes.map(n as TaskAnnotation => {
+      if (n.description.startsWith("file=")){
+        t.page = decodeURIComponent( n.description.substring(5));
+      }
+    });
+    }
+    return t;
+  }
+  return all.map(mapper).filter(t => t.page);
+}
+*/
+/*
+export function active(){
+    const taskparm = ['-DELETED', 'export'];
+    const output = execFileSync( taskPath, taskparm ).toString('utf-8');
+  return JSON.parse(output);
+}
+*/
+/*
+function toMmt (val)  {
+  if (val instanceof moment){
+    return val;
+  }
+  if (val instanceof Date) {
+    return moment(val);
+  }
+  if (val instanceof Number){
+    return moment(val);
+  }
+
+}
+*/
