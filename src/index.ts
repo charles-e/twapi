@@ -1,4 +1,4 @@
-import moment, {  Moment } from 'moment';
+import moment, { Moment } from 'moment';
 import { execFileSync } from 'child_process';
 import which from 'which';
 
@@ -31,7 +31,7 @@ export function getTaskPath() {
 export function add(task: Task, relPath: string) {
   let tags: string[] = [];
   if (task.tags) {
-    tags = task.tags.map(t => '+' + t);
+    tags = task.tags.map((t) => '+' + t);
   }
   let cmdArray = ['add'];
   const taskDesc = task.description || '';
@@ -61,9 +61,15 @@ export function add(task: Task, relPath: string) {
   return added;
 }
 
-export function getTask(id: string) {
-  const taskparm = [id, 'export'];
-  const output = execFileSync(taskPath, taskparm).toString();
+export function getTask(id: string | string[]) {
+  let arg: string[] = [];
+  if (typeof id == 'string') {
+    arg = (id as string).split(' ');
+  } else {
+    arg = id as string[];
+  }
+  arg.push('export');
+  const output = execFileSync(taskPath, arg).toString();
   //console.log(output)
   return JSON.parse(output);
 }
@@ -75,29 +81,55 @@ const markMarker: RegExp = /{(ok|id):([1-9][0-9,\\.]*|[0-9a-f]{8}-[0-9a-f]{4}-[0
 export function findMarks(input: string) {
   const map: Map<string, string> = new Map();
   let match = markMarker.exec(input);
-  let modified: string = input;
+  const modQ: any[] = [];
   while (match) {
-    modified = spliceSlice(modified, match.index, match[0].length, '');
+    modQ.unshift([match.index, match[0].length]); // LIFO
     const type = match[1];
     const val = match[2];
     map.set(type, val);
     match = markMarker.exec(input);
   }
+  let modified: string = input;
+  for (const q in modQ) {
+    modified = spliceSlice(modified, modQ[q][0], modQ[q][1], '');
+  }
   map.set('str', modified.trim());
   return map;
 }
 
-function findTags(input: string) {
-  const ret = [];
-  const matchIt = input.matchAll(tagMarker);
-  const matches = Array.from(matchIt);
+export function findTags(input: string) {
+  const map: Map<string, any> = new Map();
+  const tags = [];
+  let match = tagMarker.exec(input);
+  const modQ: any[] = [];
 
-  for (let i = 0; i < matches.length; i++) {
-    const match = matches[i];
-    ret.push(match[1]);
+  while (match) {
+    modQ.unshift([match.index, match[0].length]); // LIFO
+
+    tags.push(match[1]);
+
+    match = tagMarker.exec(input);
   }
-  return ret;
+  let modified: string = input;
+  for (const q in modQ) {
+    modified = spliceSlice(modified, modQ[q][0], modQ[q][1], '');
+  }
+  map.set('str', modified.trim());
+  map.set('tags', tags);
+  return map;
 }
+
+// function findTagsOld(input: string) {
+//   const ret = [];
+//   const matchIt = input.matchAll(tagMarker);
+//   const matches = Array.from(matchIt);
+//
+//   for (let i = 0; i < matches.length; i++) {
+//     const match = matches[i];
+//     ret.push(match[1]);
+//   }
+//   return ret;
+// }
 
 function spliceSlice(
   str: string,
@@ -181,11 +213,12 @@ function fromMatch(match: MatchType[]): Task {
       ? 'deleted'
       : 'pending';
   let rawItem: string = match[4] as string;
-  const tags = findTags(rawItem);
-  let desc = tags.length === 0 ? rawItem.trim() : rawItem.split('#')[0].trim();
-  const marks = findMarks(desc);
-  desc = marks.get('str') || desc;
-  const uuid = marks.get('id');
+  const marksMap = findMarks(rawItem);
+  let desc = marksMap.get('str') || rawItem;
+  const uuid = marksMap.get('id');
+  const tagsRet = findTags(desc);
+  desc = tagsRet.get('str');
+  desc = desc.trim();
   //const indexed = match as unknown;
   const matchIdx = (<Indexed>(match as any)).index;
   const lenTot = (<Indexed>match[0]).length;
@@ -194,7 +227,7 @@ function fromMatch(match: MatchType[]): Task {
     status: status,
     description: desc,
     loclen: `${matchIdx}:${lenTot}`,
-    tags: tags,
+    tags: tagsRet.get('tags'),
   };
   if (uuid) {
     ret.uuid = uuid;
@@ -301,7 +334,9 @@ export function done(id: string) {
 
 function getPath(old: Task) {
   if (old.annotations && old.annotations.length > 0) {
-    const hit = old.annotations.filter(f => f.description.startsWith('file='));
+    const hit = old.annotations.filter((f) =>
+      f.description.startsWith('file=')
+    );
     if (hit.length > 0) {
       return hit[0].description.substr(5);
     }
@@ -315,7 +350,7 @@ function setPath(old: Task, relpath: string) {
   }
   if (!relpath) {
     old.annotations = old.annotations.filter(
-      n => !n.description.startsWith('file=')
+      (n) => !n.description.startsWith('file=')
     );
     return;
   }
@@ -406,8 +441,9 @@ export function entry(id: string, date: unknown) {
   let value = 'entry:';
   if (date instanceof Date) {
     const myDate: Date = date;
-    value = `${value}${myDate.getFullYear()}-${myDate.getMonth() +
-      1}-${myDate.getDate()}`;
+    value = `${value}${myDate.getFullYear()}-${
+      myDate.getMonth() + 1
+    }-${myDate.getDate()}`;
   }
   if (date instanceof moment) {
     const myMom: Moment = date as Moment;
