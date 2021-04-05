@@ -20,6 +20,15 @@ export interface Task {
   tags?: string[];
 }
 let taskPath: string = '/usr/local/bin/task';
+let debug: boolean = false;
+
+export function setDebug(val: boolean) {
+  debug = val;
+}
+
+export function getDebug(): boolean {
+  return debug;
+}
 
 export function setTaskPath(path: string) {
   taskPath = which.sync(path);
@@ -36,7 +45,9 @@ export function add(task: Task, relPath: string) {
   let cmdArray = ['add'];
   const taskDesc = task.description || '';
   cmdArray.concat([taskDesc]).concat(tags);
-  console.log(cmdArray);
+  if (debug === true) {
+    console.log(cmdArray);
+  }
   execFileSync(taskPath, cmdArray).toString();
   // force a gc so that tasknums are synced
   //let list = childProcess.execFileSync( taskPath, ["list"]).toString('utf-8');
@@ -176,12 +187,16 @@ export function replaceAllMD(text: string, tasks: Task[]) {
       const ldLen = parseInt(ldata[1]);
       const origtask = text.substr(ldIdx, ldLen);
       const newtask = toMD(task);
-      console.log(newtask);
+      if (debug === true) {
+        console.log(newtask);
+      }
       if (newtask !== origtask) {
         newtxt = spliceSlice(newtxt, ldIdx, ldLen, newtask);
-        console.log('full');
-        console.log(newtxt);
-        console.log('full');
+        if (debug === true) {
+          console.log('full');
+          console.log(newtxt);
+          console.log('full');
+        }
       }
     }
   }
@@ -304,7 +319,9 @@ export function last(api: any): Task[] {
   const json = doExport();
   if (json instanceof Array && json.length > 0) {
     const sorted = json.sort(diffLast);
-    console.log('last.uuid = ' + sorted[0].uuid);
+    if (debug === true) {
+      console.log('last.uuid = ' + sorted[0].uuid);
+    }
     return sorted[0];
   }
   throw 'no result';
@@ -315,7 +332,9 @@ export function rem(id: string) {
   const output = execFileSync(taskPath, taskparm, {
     input: 'yes\n',
   }).toString();
-  console.log(output);
+  if (debug === true) {
+    console.log(output);
+  }
   return output;
 }
 
@@ -383,7 +402,9 @@ export function upsertAll(tasks: Task[], relPath: string, twApi: any) {
       ret.length > 1 &&
       ret[ret.length - 1].uuid === ret[ret.length - 2].uuid
     ) {
-      console.log('debugger');
+      if (debug === true) {
+        console.log('debugger');
+      }
     }
   }
   return ret;
@@ -422,10 +443,14 @@ export function upsert(task: Task, relPath: string, twApi: any) {
     old[0].uniq = task.uniq || 0;
     old[0].loclen = jsonIn[0].loclen;
     doImport(old);
-    console.log('updating');
+    if (debug === true) {
+      console.log('updating');
+    }
     return getById(task.uuid)[0];
   } else {
-    console.log('adding new');
+    if (debug === true) {
+      console.log('adding new');
+    }
     doImport(jsonIn);
     // return the id
     //

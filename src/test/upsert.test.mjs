@@ -3,7 +3,7 @@ import test from 'tape';
 import moment from 'moment';
 
 const main = async (t) => {
-  test.skip('to markdown', (t) => {
+  test('to markdown', (t) => {
     t.plan(1);
     let input = {
       id: 0,
@@ -24,7 +24,7 @@ const main = async (t) => {
     );
   });
 
-  test.skip('from markdown', (t) => {
+  test('from markdown', (t) => {
     t.plan(1);
     let input = `
 - [x] test 1
@@ -52,7 +52,7 @@ const main = async (t) => {
     twt.rem(added.uuid);
   });
 
-  test.skip('update task', (t) => {
+  test('update task', (t) => {
     const task = {
       description: 'tape test 1',
       tags: ['tag1', 'tag2'],
@@ -77,7 +77,7 @@ const main = async (t) => {
     twt.rem(old.uuid);
   });
 
-  test.skip('findall', (t) => {
+  test('findall', (t) => {
     t.plan(4);
     let input = `
 - [x] test 1
@@ -91,7 +91,7 @@ const main = async (t) => {
     t.equals(found[2].status, 'deleted', 'entry 3 is deleted');
   });
 
-  await test.skip('add all ', (t) => {
+  await test('add all ', (t) => {
     t.plan(5);
     let input = `
 - [ ] test 1
@@ -107,10 +107,12 @@ const main = async (t) => {
       try {
         twt.rem(newItems[n].uuid);
       } catch (e) {}
+      console.log('error deleting ' + newItems[n].uuid);
+      console.log(e.message);
     }
   });
 
-  await test.skip('replaceAll 2', (t) => {
+  await test('replaceAll 2', (t) => {
     t.plan(4);
     let input = `
 - [x] test 1
@@ -125,12 +127,14 @@ const main = async (t) => {
       t.equals(newItems[n].uuid.length, 36, 'has uuid');
       try {
         twt.rem(newItems[n].uuid);
-      } catch (e) {}
-      twt.rem(newItems[n].uuid);
+      } catch (e) {
+        console.log('error deleting ' + newItems[n].uuid);
+        console.log(e.message);
+      }
     }
   });
 
-  test.skip('fetch tasks', (t) => {
+  test('fetch tasks', (t) => {
     t.plan(3);
     const task = {
       item: 'tape test 3',
